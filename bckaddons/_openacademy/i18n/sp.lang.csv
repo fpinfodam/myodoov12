@@ -1,0 +1,2 @@
+"id","active","create_date","create_uid/id","iso_code","code","direction","date_format","time_format","grouping","name","decimal_point","thousands_sep","translatable","write_uid/id","write_date"
+"base.lang_es","True","2019-10-22 18:46:57","base.user_root","es","es_ES","Izquierda-a-Derecha","%d/%m/%Y","%H:%M:%S","[3,0]","Spanish / Español",",",".","True","base.user_root","2020-01-08 10:02:07"

@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+  db:
+    image: ${REGISTRY_HOST}/myodoodb12:latest 
+    build: 
+      context: ./bin/postgres
+    ports:
+      - "${HOST_MACHINE_POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${DB_DB}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_USER=${DB_USER}
+      - PGDATA=${DB_DATA}
+    volumes:
+      - odoo-db-data:${DB_DATA}
+    restart: always
+  web:
+    image: ${REGISTRY_HOST}/myodooweb12:latest
+    build:
+      context: ./bin/odoo12
+    depends_on:
+      - db
+    ports:
+      - "${HOST_MACHINE_ODOO_HOST_PORT}:8069"
+    tty: true
+    command: -- --dev=reload
+    # command: odoo scaffold /mnt/extra-addons/test_module
+    volumes:
+      - odoo-web-data:${ODOO_DATA}
+      - ./addons:${ODOO_ADDONS}
+      - ./etc:${ODOO_CFG}
+    restart: always 
+volumes:
+  odoo-db-data:
+  odoo-web-data:

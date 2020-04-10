@@ -1,0 +1,8 @@
+#!/bin/bash
+
+local_vol=/Users/OscarIglo/Desktop/Repo/DockerApps/odoov11/volume/docker/volumes
+
+echo $local_vol
+
+docker run --rm -it -v /var/lib/docker:/docker -v $local_vol:/volume-backup alpine:edge cp -r /volume-backup/odoov11_odoo-web-data  /docker/volumes
+

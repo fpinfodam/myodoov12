@@ -1,0 +1,55 @@
+https://medium.com/@idoberko2/migrate-docker-volume-from-one-mac-osx-host-to-another-4607a5c61c58
+
+Migre el volumen de Docker de un host Mac OSX a otro
+
+
+Publicado también en mi blog personal .
+Recientemente cambié mi computadora portátil MacBook Pro por una más nueva, ¡Yay! Tenía copias de seguridad regulares de la máquina del tiempo en una unidad externa, por lo que pensé que la transición sería súper suave. Spoiler: no lo fue.
+Cambié al directorio de mi proyecto, corrí docker-compose upy esperaba que ocurriera la magia. Mi proyecto comenzó bien, excepto por el hecho de que el volumen con nombre que tenía en mi máquina anterior no se migró a la nueva máquina. ¿Ahora que?
+Enumeré los volúmenes que tenía en mi máquina anterior ejecutándolos docker volume ls, localicé el volumen relevante, llamémoslo data-voly luego ejecuté docker volume inspect data-vol. El comando anterior imprimió algo como esto:
+[ 
+    { 
+        "CreatedAt": "2018-10-10T09: 53: 30Z", 
+        "Driver": "local", 
+        "Labels": { 
+            "com.docker.compose.project": "project", 
+            "com.docker. compose.version ":" 1.22.0 ", 
+            " com.docker.compose.volume ":" data-vol " 
+        }, 
+        " Mountpoint ":" / var / lib / docker / volume / data-vol / _data ", 
+        " Nombre ":" data-vol ", 
+        " Opciones ": nulo, 
+        " Alcance ":" local " 
+    } 
+]
+
+¡Excelente! Todo lo que necesito hacer es copiar /var/lib/docker/volumes/data-vola la misma ruta en la nueva máquina, y todo funcionará. ¿Qué tan simple es eso?
+No exactamente. Aparentemente, /var/lib/dockerestá oculto debajo de la máquina virtual xhyve (el administrador de máquina virtual que utiliza docker-machine en Mac OSX). Necesitaba implementar algunas soluciones para alcanzarlo.
+Solución
+Exportando los volúmenes en la vieja máquina
+Encontré una manera fácil de lograr lo que quiero en este hilo :
+docker run --rm -it -v ~ / volume-backup: / backup -v / var / lib / docker: / docker alpine: edge tar cfz /backup/volumes.tgz / docker / volume /
+El comando anterior ejecuta un contenedor alpino con dos volúmenes:
+(host) ~/volume-backup=> (contenedor)/backup
+(host) /var/lib/docker/=> (contenedor)/docker
+Este contenedor ejecuta un solo comando que archiva /docker/volumesy eventualmente terminaré con un volumes.tgzarchivo en mi ~/volume-backupcarpeta (en mi host).
+Nota: Esto puede llevar un tiempo en caso de que tenga muchos volúmenes de docker o grandes volúmenes.
+Importando los volúmenes en la nueva máquina
+Después de copiar el volumes.tgzarchivo a mi nueva máquina (misma ruta, ~/volume-backup/volumes.tgz), necesitaba (nuevamente) acceder /var/lib/dockerpara implementar este archivo de copia de seguridad.
+Navegué a la ruta donde está el archivo:
+cd ~ / volume-backup
+Y extrajo el archivo ejecutando:
+tar zxvf volumes.tgz
+En este punto, todos los volúmenes estarán disponibles en ./docker/volumes.
+Nota: Esto puede llevar un tiempo en caso de que tenga muchos volúmenes de docker o grandes volúmenes.
+Nota importante: antes de continuar, asegúrese de que no haya un contenedor en ejecución que use el volumen data-vol( docker stoptales contenedores).
+De manera similar a lo que hice al exportar los volúmenes en la sección anterior, ahora ejecuté:
+docker run --rm -it -v / var / lib / docker: / docker -v ~ / volume-backup / docker / volume: / volume-backup alpine: edge cp -r / volume-backup / data-vol / docker / volúmenes
+El comando anterior ejecuta un contenedor alpino con dos volúmenes:
+(host) /var/lib/docker=> (contenedor)/docker
+(host) ~/volume-backup=> (contenedor)/volume-backup/docker/volumes
+Este contenedor ejecuta un comando único que copia el archivo de volumen en su ubicación correcta en la nueva máquina.
+En este punto, la ejecución docker-compose upcomenzó mi proyecto con todos los datos que residen donde pertenece.
+Conclusión
+Cuando se trabaja con docker-machineMac OSX, /var/lib/dockerno se puede acceder directamente desde la máquina host. En la mayoría de los casos, no necesita acceder a esta ruta.
+Sin embargo, si necesita acceder a él, la solución consiste en ejecutar un contenedor ligero con dos volúmenes, uno que tenga su origen /var/lib/dockeren la máquina host, que es accesible para la máquina virtual de Docker y el segundo origen es el camino hacia el que desea tomar archivos de / a.
